@@ -1,29 +1,62 @@
 name: Deploy to GitHub Pages
+
 on:
+  # Löst den Workflow bei Pushes in den "main" Branch aus
   push:
     branches: ["main"]
+
+  # Erlaubt das manuelle Starten über den Actions-Tab
   workflow_dispatch:
+
+# Setzt die Berechtigungen für den GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Verhindert, dass mehrere Deploys gleichzeitig laufen
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
+  # Single deploy job
   deploy:
     environment:
       name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # 1. Code auschecken
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 2. Pages konfigurieren
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 3. API Key einfügen (Sicherheits-Schritt)
+      # Ersetzt den Platzhalter __GEMINI_API_KEY__ in der index.html
+      # mit dem echten Key aus den Repository Secrets.
       - name: Inject API Key
+        env:
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          sed -i "s/__GEMINI_API_KEY__/${{ secrets.GEMINI_API_KEY }}/g" index.html
+          if [ -z "$API_KEY" ]; then
+            echo "WARNUNG: GEMINI_API_KEY Secret nicht gefunden! Die App wird im Demo-Modus laufen."
+          else
+            sed -i "s|__GEMINI_API_KEY__|$API_KEY|g" index.html
+            echo "API Key erfolgreich in index.html injiziert."
+          fi
+
+      # 4. Dateien hochladen (Artifakt erstellen)
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # Lädt das gesamte Verzeichnis hoch '.'
           path: '.'
-      - name: Deploy
+
+      # 5. Deployment durchführen
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
-
-
-
