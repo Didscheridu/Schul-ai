@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>SchulSim AI 5.0</title>
+    <title>SchulSim AI 5.1 (Pro Design)</title>
     
     <!-- Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,13 +14,45 @@
 
     <style>
         @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+        .animate-fade-in-up { animation: fade-in-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        
+        @keyframes aurora {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .bg-aurora {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+            background-size: 400% 400%;
+            animation: aurora 15s ease infinite;
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(99, 102, 241, 0.5);
+            outline: none;
+        }
+        
         .h-dvh { height: 100dvh; }
-        .bg-glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 m-0 p-0 overscroll-none">
@@ -28,9 +60,10 @@
 
     <script type="text/babel">
         // ==========================================
-        // KONFIGURATION (GitHub Secrets Mode)
+        // KONFIGURATION
         // ==========================================
-        const apiKey = "__GEMINI_API_KEY__"; 
+        // Platzhalter für GitHub Secrets. Wenn leer, wird LocalStorage genutzt.
+        const encodedKey = "__GEMINI_API_KEY__"; 
 
         const { useState, useEffect, useRef } = React;
 
@@ -60,15 +93,8 @@
             Mic: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3",
             Sparkles: "m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z M5 3v4 M9 3v4 M3 7h4",
             Pencil: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4",
-            FileText: "M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z M14 2L14 8 20 8 M16 13H8 M16 17H8 M10 9H8",
-            Lock: "M7 11V7a5 5 0 0 1 10 0v4 M3 11h18v11H3z",
-            Globe: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20 M2 12h20",
-            Scale: "m16 16 3-8 3 8c-.87.65-1.926 1-3 1s-2.13-.35-3-1Z m-14 0 3-8 3 8c-.87.65-1.926 1-3 1s-2.13-.35-3-1Z M7 21h10 M12 3v18 M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2",
-            Shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10",
-            FileCheck: "M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z M14 2L14 8 20 8 M9 15l2 2 4-4",
-            UserCheck: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M16 11l2 2 4-4",
-            Cookie: "M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5 M8.5 8.5v.01 M16 15.5v.01 M12 12v.01 M11 17v.01 M7 14v.01",
-            HelpCircle: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01 M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+            Settings: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+            Key: "M21 2l-2 2m-7.6 7.6l4.4 4.4L22 7l-3-3l-4.4 4.4M2 17l6-6M2 17v4h4"
         };
 
         const DESIGNS = {
@@ -77,6 +103,8 @@
             chalkboard: { name: 'Tafel (Grün)', bg: 'bg-emerald-900', text: 'text-white', border: 'border-yellow-700/50' },
             cyber: { name: 'Cyber (Neon)', bg: 'bg-slate-950', text: 'text-cyan-400', border: 'border-cyan-500/50' },
             book: { name: 'Buch (Antik)', bg: 'bg-amber-50', text: 'text-stone-800', border: 'border-stone-300' },
+            nature: { name: 'Natur (Frisch)', bg: 'bg-green-50', text: 'text-green-900', border: 'border-green-200' },
+            minimal: { name: 'Minimal (S/W)', bg: 'bg-zinc-50', text: 'text-zinc-900', border: 'border-zinc-300' }
         };
 
         const Typewriter = ({ text }) => {
@@ -90,10 +118,10 @@
                 }, 5);
                 return () => clearInterval(timer);
             }, [text]);
-            return <span className="whitespace-pre-wrap">{display.split('**').map((s,i) => i%2===1 ? <strong key={i} className="text-indigo-400">{s}</strong> : s)}</span>;
+            return <span className="whitespace-pre-wrap">{display.split('**').map((s,i) => i%2===1 ? <strong key={i} className="text-indigo-400 font-bold">{s}</strong> : s)}</span>;
         };
 
-        // --- API & SEARCH HELPERS ---
+        // --- API HELPERS ---
         const urlToBase64 = async (url) => {
             try {
                 const res = await fetch(url); const blob = await res.blob();
@@ -101,15 +129,15 @@
             } catch (e) { return null; }
         };
 
-        const verifyImageQuality = async (imgUrl, topic) => {
-            if (!apiKey || apiKey.includes("__GEMINI")) return true; // Ohne Key keine Prüfung -> durchlassen
+        const verifyImageQuality = async (imgUrl, topic, key) => {
+            if (!key) return true;
             const base64 = await urlToBase64(imgUrl);
             if (!base64) return true;
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [
-                        { text: `Prüfe das Bild für den Schulunterricht Thema "${topic}". Ist es lehrreich, zeigt es das Thema korrekt und ist es sicher (kein NSFW)? Antworte NUR JA oder NEIN.` },
+                        { text: `Prüfe das Bild für das Thema "${topic}". Ist es ein gutes, klares Lernmaterial (keine Memes, kein Spam)? Antworte NUR JA oder NEIN.` },
                         { inlineData: { mimeType: "image/jpeg", data: base64 } }
                     ] }] })
                 });
@@ -118,54 +146,68 @@
             } catch (e) { return true; }
         };
 
-        const searchInternetImage = async (query, onStatus) => {
-            const cleanQuery = query.replace(/bild von|foto von/gi, '').trim();
+        const searchInternetImage = async (query, onStatus, key) => {
+            const cleanQuery = query.replace(/bild von|foto von|picture of|image of/gi, '').trim();
             const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*`;
             try {
-                if (onStatus) onStatus("Suche echtes Bild...");
+                if (onStatus) onStatus("Suche geeignete Bilder...");
                 const res = await fetch(url); const data = await res.json();
                 if (data.query?.pages) {
                     const pages = Object.values(data.query.pages);
                     for (let i = 0; i < Math.min(pages.length, 3); i++) {
                         const candidate = pages[i].imageinfo[0].url;
-                        // Überspringe SVGs für bessere Kompatibilität in Vorschau, wenn möglich
-                        if (candidate.endsWith('.svg') && i < pages.length-1) continue;
-
-                        if (onStatus) onStatus(`Prüfe Bild ${i+1}...`);
-                        if (await verifyImageQuality(candidate, query)) return candidate;
+                        if (!candidate.endsWith('.svg')) { // SVGs vermeiden
+                            if (onStatus) onStatus(`Prüfe Bild ${i+1} auf Qualität...`);
+                            if (await verifyImageQuality(candidate, query, key)) return candidate;
+                        }
                     }
                     return pages[0].imageinfo[0].url; // Fallback erstes Bild
                 }
             } catch (e) {}
-            return null; // Kein Bild gefunden = Nichts anzeigen (besser als Fake)
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(query)}?width=800&height=600&nologo=true`;
         };
 
-        const generateContent = async (history, prompt, imageData, mode) => {
-            if (!apiKey || apiKey.includes("__GEMINI")) return "System: API Key fehlt. Bitte in GitHub Secrets konfigurieren.";
-            
+        const generateContent = async (history, prompt, imageData, mode, key, settings) => {
+            if (!key) return "FEHLER: Bitte API Key eintragen.";
             const parts = [{ text: prompt }];
             if (imageData) parts.push({ inlineData: { mimeType: "image/png", data: imageData } });
 
-            const systemPrompt = mode === 'presentation'
-                ? `Erstelle JSON für Schulpräsentation. Format: [{"title": "...", "content": ["Punkt 1"], "layout": "image_right", "imagePrompt": "Suchbegriff für Bild", "flashcard": "Sprechertext"}]. Layouts: image_right, image_left, title_only. KEIN Markdown.`
-                : `Du bist 'Herr Lehrer'. Modus: ${mode}. Erkläre fachlich korrekt. Nutze Absätze, Listen, **Fett**. KEINE LaTeX Formeln.`;
+            let systemPrompt = "";
+            if (mode === 'presentation') {
+                systemPrompt = `Erstelle eine JSON-Struktur für eine Schulpräsentation.
+                Thema: ${settings?.topic}. Zielgruppe: ${settings?.audience}. Detailgrad: ${settings?.detail}.
+                Format: [{"title": "...", "content": ["Punkt 1", "Punkt 2"], "layout": "image_right", "imagePrompt": "Suchbegriff", "flashcard": "Sprechertext"}]. 
+                Layouts: image_right, image_left, title_only. 
+                WICHTIG: KEIN Markdown. Nur valides JSON.`;
+            } else {
+                systemPrompt = `Du bist 'Herr Lehrer'. Modus: ${mode}. Erkläre fachlich korrekt, kindgerecht und strukturiert. Nutze Absätze und Fettgedrucktes.`;
+            }
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: systemPrompt }] }, ...history, { role: "user", parts }] })
                 });
                 const data = await res.json();
-                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Fehler.";
-                if (mode === 'presentation') { text = text.replace(/```json|```/g, '').trim(); const m = text.match(/\[.*\]/s); if (m) text = m[0]; }
-                // LaTeX Cleaner
-                text = text.replace(/\$\$/g, '').replace(/\\\[/g, '').replace(/\\\]/g, '');
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) return "Keine Antwort.";
+                text = text.replace(/\$\$/g, '').replace(/\\\[/g, '').replace(/\\\]/g, ''); 
+                if (mode === 'presentation') { 
+                    text = text.replace(/```json|```/g, '').trim(); 
+                    const m = text.match(/\[.*\]/s); 
+                    if (m) text = m[0]; 
+                }
                 return text;
             } catch (e) { return "Verbindungsfehler."; }
         };
 
-        // --- APP ---
+        // --- APP COMPONENT ---
         const App = () => {
+            const [localKey, setLocalKey] = useState(() => {
+                if (encodedKey && !encodedKey.includes("__GEMINI")) return encodedKey;
+                return localStorage.getItem('gemini_key') || "";
+            });
+            
             const [view, setView] = useState("intro");
             const [mode, setMode] = useState("explain");
             const [topic, setTopic] = useState("");
@@ -173,167 +215,160 @@
             const [input, setInput] = useState("");
             const [loading, setLoading] = useState(false);
             const [currentImg, setCurrentImg] = useState(null);
+            const [imgStatus, setImgStatus] = useState(null);
+            const [fileData, setFileData] = useState(null); // Base64 Data
+            
+            // Presentation
             const [slides, setSlides] = useState([]);
             const [slideIdx, setSlideIdx] = useState(0);
-            const [imgStatus, setImgStatus] = useState(null);
-            const [fileData, setFileData] = useState(null);
-            
-            // New: Legal & Cookies
-            const [showLegal, setShowLegal] = useState(false);
-            const [showCookieBanner, setShowCookieBanner] = useState(true);
+            const [presSettings, setPresSettings] = useState({ count: 5, design: 'modern', source: 'web', audience: 'Klasse 5-10', detail: 'Mittel' });
+            const [presProgress, setPresProgress] = useState(null);
 
+            const [showKeyInput, setShowKeyInput] = useState(false);
             const chatEndRef = useRef(null);
+
             useEffect(() => { if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
-            const handleStart = async (m, sub = null) => {
-                setView("classroom"); setLoading(true); setMessages([]);
-                let mode = sub || m;
-                let prompt = `Thema: ${topic}`;
+            const handleSaveKey = (k) => { setLocalKey(k); localStorage.setItem('gemini_key', k); setShowKeyInput(false); };
+            
+            const reset = () => { setView("intro"); setTopic(""); setMessages([]); setSlides([]); setCurrentImg(null); setFileData(null); };
 
-                // Frage-Modus Anpassung
-                if (sub === 'question') {
-                    prompt = `Ich habe eine Frage zu "${topic}": ${topic} (Bitte beantworte die Frage)`;
-                }
+            const handleStart = async (m, sub = null) => {
+                if (!localKey) { setShowKeyInput(true); return; }
+                setView("classroom"); setLoading(true); setMessages([]);
+                let modeName = sub || m;
+                let prompt = `Thema: ${topic}`;
+                let imgQuery = topic;
+
+                // Modus-Spezifische Logik
+                if (sub === 'question') { prompt = `Frage: ${topic}`; imgQuery = topic; }
+                else if (fileData) { prompt += " (Siehe Bild)"; imgQuery = null; setCurrentImg(fileData); }
 
                 try {
-                    if (mode === 'presentation') {
-                        prompt = `Thema: ${topic}.`;
-                        const json = await generateContent([], prompt, null, 'presentation');
+                    if (modeName === 'presentation') {
+                        prompt = `Erstelle Präsentation über ${topic}.`;
+                        const json = await generateContent([], prompt, null, 'presentation', localKey, { ...presSettings, topic });
                         const parsed = JSON.parse(json); setSlides(parsed);
                         for (let i = 0; i < parsed.length; i++) {
                             if (parsed[i].imagePrompt) {
-                                setImgStatus(`Folie ${i+1}: Suche Bild im Internet...`);
-                                parsed[i].imageUrl = await searchInternetImage(parsed[i].imagePrompt, null);
+                                setPresProgress(`Suche Bild für Folie ${i+1}...`);
+                                parsed[i].imageUrl = await searchInternetImage(parsed[i].imagePrompt, null, localKey);
                             }
                         }
-                        setSlides([...parsed]); setImgStatus(null);
+                        setSlides([...parsed]); setPresProgress(null);
                     } else {
-                        if (fileData) {
-                            prompt += " (Siehe Bild)";
-                            setCurrentImg(fileData);
-                        } else {
-                            // Nur suchen, wenn wir nicht im reinen Fragen-Modus ohne Kontext sind, oder immer?
-                            // Lehrer visualisiert immer gerne.
-                            setImgStatus("Suche passendes Bild...");
-                            searchInternetImage(topic, setImgStatus).then(img => { setCurrentImg(img); setImgStatus(null); });
+                        if (imgQuery && !currentImg) {
+                             searchInternetImage(imgQuery, setImgStatus, localKey).then(img => { setCurrentImg(img); setImgStatus(null); });
                         }
-                        const res = await generateContent([], prompt, fileData?.split(',')[1], mode);
+                        const res = await generateContent([], prompt, fileData?.split(',')[1], modeName, localKey);
                         setMessages([{ role: "model", parts: [{ text: res }] }]);
                     }
-                } catch(e) { setMessages([{ role: 'model', parts: [{ text: "Es gab ein Problem. Bitte lade die Seite neu." }] }]); }
+                } catch(e) { setMessages([{ role: 'model', parts: [{ text: "Ein Fehler ist aufgetreten." }] }]); }
                 setLoading(false);
             };
 
-            const reset = () => { setView("intro"); setTopic(""); setMessages([]); setSlides([]); setCurrentImg(null); setFileData(null); };
-
-            const handleSend = async () => { if (!input.trim()) return; const newMsg = [...messages, {role:'user', parts:[{text:input}]}]; setMessages(newMsg); setInput(''); setLoading(true); const r = await generateContent(newMsg, input, null, mode); setMessages(p => [...p, {role:'model', parts:[{text:r}]}]); setLoading(false); };
-            const handleDownloadImage = () => { if (!currentImg) return; const link = document.createElement('a'); link.href = currentImg; link.download = `SchulSim.png`; document.body.appendChild(link); link.click(); document.body.removeChild(link); };
-            
-            const downloadPPTX = async () => {
-                const PptxGenJS = await loadPptxLib(); const pres = new PptxGenJS(); pres.layout = 'LAYOUT_16x9';
-                const d = DESIGNS[presSettings.design] || DESIGNS.modern;
-                // Farben Hardcoded für PPTX da Tailwind nicht geht
-                const colors = { modern: {bg:'FFFFFF', fg:'1e293b'}, chalkboard: {bg:'064E3B', fg:'FFFFFF'}, cyber: {bg:'020617', fg:'22d3ee'} };
-                const c = colors[presSettings?.design] || colors.modern;
-
-                slides.forEach(slide => {
-                    const s = pres.addSlide(); s.background = { color: c.bg };
-                    s.addText(slide.title, { x:0.5, y:0.4, w:'90%', h:0.8, fontSize:28, bold:true, color:c.fg });
-                    if (slide.layout !== 'title_only') {
-                         if (slide.content) s.addText(slide.content.map(t=>({text:t})), { x:0.5, y:1.4, w:4.5, h:4, fontSize:18, color:c.fg, bullet:true });
-                         if (slide.imageUrl) s.addImage({ path:slide.imageUrl, x:5.5, y:1.4, w:4.3, h:3.5 });
-                    }
-                    if(slide.flashcard) s.addNotes(slide.flashcard);
-                });
-                pres.writeFile({ fileName: `Praesentation.pptx` });
-            };
-
-            // Settings State für Präsi (default)
-            const [presSettings, setPresSettings] = useState({ design: 'modern', count: 5 });
+            const handleSend = async () => { if (!input.trim()) return; const newMsg = [...messages, {role:'user', parts:[{text:input}]}]; setMessages(newMsg); setInput(''); setLoading(true); const r = await generateContent(newMsg, input, null, mode, localKey); setMessages(p => [...p, {role:'model', parts:[{text:r}]}]); setLoading(false); };
 
             const dObj = DESIGNS[presSettings.design] || DESIGNS.modern;
 
             if (view === "intro") {
                 return (
-                    <div className="h-dvh bg-slate-950 text-white flex flex-col font-sans overflow-y-auto">
-                        <div className="fixed inset-0 bg-gradient-to-br from-indigo-900 to-slate-950 -z-10"></div>
-                        <div className="z-10 flex flex-col items-center pt-10 pb-6 px-4 animate-fade-in-up">
-                            <div className="inline-block p-5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl shadow-2xl mb-4 hover:scale-105 transition-transform"><Icon d={PATHS.GraduationCap} size={56} className="text-white" /></div>
-                            <h1 className="text-4xl md:text-6xl font-black mb-2">SchulSim AI 5.0</h1>
-                            <p className="text-indigo-300 font-bold tracking-[0.4em] text-xs uppercase mt-2">Professional Edition • Created by Kayden</p>
-                        </div>
-
-                        <div className="z-10 w-full max-w-7xl px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mx-auto animate-fade-in-up">
-                            {/* Verstehen */}
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-white/10 transition-all flex flex-col shadow-2xl">
-                                <div className="flex items-center gap-3 mb-4 text-blue-400"><Icon d={PATHS.Brain} size={28} /> <h3 className="font-bold text-xl text-white">Verstehen</h3></div>
-                                <div className="space-y-3 mt-auto">
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>handleStart('explain')} className="flex-1 bg-white/10 py-1.5 rounded text-[10px] font-bold hover:bg-white/20">Erklären</button>
-                                        <button onClick={()=>handleStart('explain', 'question')} className="flex-1 bg-white/10 py-1.5 rounded text-[10px] font-bold hover:bg-white/20">Frage</button>
-                                    </div>
-                                    <input className="w-full bg-black/40 rounded-xl px-4 py-3 text-sm text-white outline-none border border-white/10 focus:border-blue-500" placeholder="Thema oder Frage..." value={topic} onChange={e=>setTopic(e.target.value)} />
-                                </div>
-                            </div>
+                    <div className="h-dvh flex flex-col bg-slate-950 text-white font-sans overflow-y-auto bg-aurora">
+                         <div className="fixed inset-0 -z-10 bg-slate-900/80"></div>
+                         
+                         {/* Header */}
+                         <div className="z-10 flex flex-col items-center pt-12 pb-8 px-4 animate-fade-in-up">
+                            <div className="inline-block p-5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl shadow-2xl mb-4 hover:scale-105 transition-transform"><Icon d={PATHS.GraduationCap} size={56} /></div>
+                            <h1 className="text-4xl md:text-6xl font-black mb-2 tracking-tight">SchulSim AI 5.0</h1>
+                            <p className="text-indigo-300 font-bold tracking-widest text-xs uppercase mt-2">Professional Learning Suite</p>
                             
-                            {/* Vokabeln */}
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-white/10 transition-all flex flex-col shadow-2xl">
-                                <div className="flex items-center gap-3 mb-4 text-pink-400"><Icon d={PATHS.Languages} size={28} /> <h3 className="font-bold text-xl text-white">Vokabeln</h3></div>
-                                <div className="space-y-3 mt-auto">
-                                    <label className="flex items-center justify-center gap-2 w-full py-2 border border-dashed border-slate-500 rounded-xl text-slate-300 text-xs cursor-pointer hover:border-white hover:text-white bg-black/20"><Icon d={PATHS.Upload} size={14} /> {fileData ? "Bild bereit" : "Bild laden"}<input type="file" accept="image/*" className="hidden" onChange={(e) => { const r = new FileReader(); r.onload = ev => setFileData(ev.target.result); r.readAsDataURL(e.target.files[0]); }} /></label>
-                                    <input className="w-full bg-black/40 rounded-xl px-4 py-3 text-sm text-white outline-none border border-white/10 focus:border-pink-500" placeholder="Sprache..." value={topic} onChange={e=>setTopic(e.target.value)} />
-                                    <button onClick={()=>handleStart('vocabulary')} className="w-full bg-pink-600 hover:bg-pink-500 py-3 rounded-xl font-bold text-sm text-white shadow-lg">Starten</button>
-                                </div>
-                            </div>
+                            {/* API STATUS */}
+                            <button onClick={()=>setShowKeyInput(true)} className={`mt-6 px-4 py-2 rounded-full border text-xs font-bold flex items-center gap-2 transition-all ${localKey ? 'border-green-500/50 bg-green-500/10 text-green-400' : 'border-red-500/50 bg-red-500/10 text-red-400 animate-pulse'}`}>
+                                <div className={`w-2 h-2 rounded-full ${localKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                {localKey ? "System Bereit" : "Setup erforderlich (Klick hier)"}
+                            </button>
+                        </div>
 
-                            {/* Aufgaben */}
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-white/10 transition-all flex flex-col shadow-2xl">
-                                <div className="flex items-center gap-3 mb-4 text-emerald-400"><Icon d={PATHS.PenTool} size={28} /> <h3 className="font-bold text-xl text-white">Aufgaben</h3></div>
-                                <div className="space-y-3 mt-auto">
-                                     <label className="flex items-center justify-center gap-2 w-full py-2 border border-dashed border-slate-500 rounded-xl text-slate-300 text-xs cursor-pointer hover:border-white hover:text-white bg-black/20"><Icon d={PATHS.Upload} size={14} /> {fileData ? "Bild bereit" : "Bild laden"}<input type="file" accept="image/*" className="hidden" onChange={(e) => { const r = new FileReader(); r.onload = ev => setFileData(ev.target.result); r.readAsDataURL(e.target.files[0]); }} /></label>
-                                    <div className="flex gap-1 w-full">
-                                        <button onClick={()=>handleStart('homework_help')} className="flex-1 bg-white/10 py-1 rounded text-[9px] font-bold hover:bg-white/20">HILFE</button>
-                                        <button onClick={()=>handleStart('correction')} className="flex-1 bg-white/10 py-1 rounded text-[9px] font-bold hover:bg-white/20">KORR.</button>
-                                        <button onClick={()=>handleStart('homework_solve')} className="flex-1 bg-white/10 py-1 rounded text-[9px] font-bold hover:bg-white/20">LÖSEN</button>
-                                    </div>
-                                    <input className="w-full bg-black/40 rounded-xl px-4 py-3 text-sm text-white outline-none border border-white/10 focus:border-emerald-500" placeholder="Aufgabe..." value={topic} onChange={e=>setTopic(e.target.value)} />
-                                </div>
-                            </div>
-
-                            {/* Präsentation */}
-                            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-white/10 transition-all flex flex-col shadow-2xl">
-                                <div className="flex items-center gap-3 mb-4 text-orange-400"><Icon d={PATHS.Presentation} size={28} /> <h3 className="font-bold text-xl text-white">Referat</h3></div>
-                                <div className="space-y-3 mt-auto">
+                        {/* Module Grid */}
+                        <div className="z-10 w-full max-w-7xl px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mx-auto animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+                            
+                            {/* 1. VERSTEHEN */}
+                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                                <div className="flex items-center gap-3 mb-4 text-blue-400"><Icon d={PATHS.Brain} size={28} /> <h3 className="font-bold text-xl text-white">Verstehen</h3></div>
+                                <div className="mt-auto space-y-3">
                                     <div className="flex gap-2">
-                                        <select className="bg-black/40 rounded-xl px-2 py-2 text-xs flex-1 outline-none text-white border border-white/10" onChange={e=>setPresSettings({...presSettings, design:e.target.value})}>{Object.keys(DESIGNS).map(d => <option key={d} value={d}>{DESIGNS[d].name}</option>)}</select>
+                                        <button onClick={()=>handleStart('explain')} className="flex-1 bg-white/10 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors">ERKLÄREN</button>
+                                        <button onClick={()=>handleStart('explain', 'question')} className="flex-1 bg-white/10 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors">FRAGE</button>
                                     </div>
-                                    <input className="w-full bg-black/40 rounded-xl px-4 py-3 text-sm text-white outline-none border border-white/10 focus:border-orange-500" placeholder="Thema..." value={topic} onChange={e=>setTopic(e.target.value)} />
-                                    <button onClick={()=>handleStart('presentation')} disabled={!topic} className="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center gap-2"><Icon d={PATHS.Play} size={14}/> Erstellen</button>
+                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm" placeholder="Thema oder Frage..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                </div>
+                            </div>
+
+                            {/* 2. VOKABELN */}
+                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                                <div className="flex items-center gap-3 mb-4 text-pink-400"><Icon d={PATHS.Languages} size={28} /> <h3 className="font-bold text-xl text-white">Vokabeln</h3></div>
+                                <div className="mt-auto space-y-3">
+                                    <label className="w-full border border-dashed border-white/20 rounded-xl py-2 flex items-center justify-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-white/5 transition-colors">
+                                        <Icon d={fileData ? PATHS.Check : PATHS.Upload} size={14} /> {fileData ? "Bild bereit" : "Liste hochladen"}
+                                        <input type="file" accept="image/*" className="hidden" onChange={e => { const r = new FileReader(); r.onload = ev => setFileData(ev.target.result); r.readAsDataURL(e.target.files[0]); }} />
+                                    </label>
+                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-pink-500" placeholder="Sprache (z.B. Englisch)..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <button onClick={()=>handleStart('vocabulary')} className="w-full bg-pink-600 hover:bg-pink-500 py-3 rounded-xl font-bold text-sm shadow-lg transition-transform active:scale-95">Training starten</button>
+                                </div>
+                            </div>
+
+                            {/* 3. AUFGABEN */}
+                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                                <div className="flex items-center gap-3 mb-4 text-emerald-400"><Icon d={PATHS.PenTool} size={28} /> <h3 className="font-bold text-xl text-white">Aufgaben</h3></div>
+                                <div className="mt-auto space-y-3">
+                                    <label className="w-full border border-dashed border-white/20 rounded-xl py-2 flex items-center justify-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-white/5 transition-colors">
+                                        <Icon d={fileData ? PATHS.Check : PATHS.Upload} size={14} /> {fileData ? "Aufgabe bereit" : "Foto hochladen"}
+                                        <input type="file" accept="image/*" className="hidden" onChange={e => { const r = new FileReader(); r.onload = ev => setFileData(ev.target.result); r.readAsDataURL(e.target.files[0]); }} />
+                                    </label>
+                                    <div className="flex gap-1 w-full bg-black/20 p-1 rounded-lg">
+                                        <button onClick={()=>handleStart('homework_help')} className="flex-1 py-1.5 rounded text-[10px] font-bold hover:bg-white/10 text-slate-300 hover:text-white">HILFE</button>
+                                        <button onClick={()=>handleStart('correction')} className="flex-1 py-1.5 rounded text-[10px] font-bold hover:bg-white/10 text-slate-300 hover:text-white">KORR.</button>
+                                        <button onClick={()=>handleStart('homework_solve')} className="flex-1 py-1.5 rounded text-[10px] font-bold hover:bg-white/10 text-slate-300 hover:text-white">LÖSEN</button>
+                                    </div>
+                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-emerald-500" placeholder="Aufgabe..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                </div>
+                            </div>
+
+                            {/* 4. PRÄSENTATION */}
+                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border-orange-500/30">
+                                <div className="flex items-center gap-3 mb-4 text-orange-400"><Icon d={PATHS.Presentation} size={28} /> <h3 className="font-bold text-xl text-white">Referat</h3></div>
+                                <div className="mt-auto space-y-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, audience:e.target.value})}>
+                                            <option>Klasse 5-7</option><option>Klasse 8-10</option><option>Oberstufe</option>
+                                        </select>
+                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, detail:e.target.value})}>
+                                            <option>Kurz</option><option>Mittel</option><option>Ausführlich</option>
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, design:e.target.value})}>
+                                            {Object.keys(DESIGNS).map(k=><option key={k} value={k}>{DESIGNS[k].name}</option>)}
+                                        </select>
+                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, count:e.target.value})}>
+                                            {[3,5,7,10,12].map(n=><option key={n} value={n}>{n} Folien</option>)}
+                                        </select>
+                                    </div>
+                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-orange-500" placeholder="Thema..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <button onClick={()=>handleStart('presentation')} disabled={!topic} className="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"><Icon d={PATHS.Play} size={14}/> Erstellen</button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* LEGAL FOOTER */}
-                        <div className="w-full text-center pb-8 mt-auto z-10">
-                           <button onClick={() => setShowLegal(true)} className="text-[10px] text-slate-500 hover:text-white transition-colors">Rechtliches & Impressum</button>
-                        </div>
-                        {showCookieBanner && (
-                          <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4 z-50 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
-                            <div className="flex items-center gap-3"><div className="p-2 bg-blue-500/20 rounded-full text-blue-400"><Icon d={PATHS.Cookie} size={20} /></div><p className="text-xs text-slate-300">Wir verwenden Cookies für die Funktion der Website.</p></div>
-                            <button onClick={() => setShowCookieBanner(false)} className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg font-bold">Akzeptieren</button>
-                          </div>
-                        )}
-                         {showLegal && (
-                          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[85vh] rounded-2xl flex flex-col shadow-2xl relative">
-                              <div className="p-6 border-b border-slate-800 flex justify-between items-center sticky top-0 bg-slate-900 rounded-t-2xl z-10"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon d={PATHS.FileText} className="text-indigo-400"/> Rechtliche Hinweise</h2><button onClick={() => setShowLegal(false)} className="text-slate-400 hover:text-white"><Icon d={PATHS.X} /></button></div>
-                              <div className="p-6 overflow-y-auto space-y-8 text-sm text-slate-300">
-                                <section><h3 className="font-bold text-white mb-2">Impressum</h3><p>Kayden Schunack<br/>Kontakt: didskanal@gmail.com</p></section>
-                                <section><h3 className="font-bold text-white mb-2">Datenschutz</h3><p>Keine dauerhafte Speicherung personenbezogener Daten.</p></section>
-                                <section><h3 className="font-bold text-white mb-2">Bildquellen</h3><p>Bilder werden über die Wikimedia Commons API bezogen oder sind gemeinfrei.</p></section>
-                              </div>
+                        {/* KEY INPUT MODAL */}
+                        {showKeyInput && (
+                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+                                <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+                                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon d={PATHS.Key} className="text-yellow-400"/> API Key Setup</h2>
+                                    <input type="password" placeholder="AIzaSy..." className="w-full bg-black/50 border border-slate-600 rounded-lg px-4 py-3 text-white mb-6 outline-none focus:border-indigo-500" onKeyDown={(e) => { if(e.key === 'Enter') handleSaveKey(e.target.value) }} />
+                                    <div className="flex gap-2"><button onClick={(e) => handleSaveKey(e.target.previousSibling.value)} className="flex-1 bg-indigo-600 py-2 rounded-lg font-bold">Speichern</button><button onClick={() => setShowKeyInput(false)} className="flex-1 border border-white/10 py-2 rounded-lg">Abbrechen</button></div>
+                                </div>
                             </div>
-                          </div>
                         )}
                     </div>
                 );
@@ -341,40 +376,37 @@
 
             return (
                 <div className="h-dvh flex flex-col md:flex-row bg-slate-950 overflow-hidden">
+                    {/* LEFT PANE */}
                     <div className="h-[40%] md:h-full md:w-1/2 border-r border-white/5 flex flex-col bg-[#0F1115]">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#0F1115]">
                             <span className="font-bold text-indigo-400 flex items-center gap-2"><Icon d={PATHS.ImageIcon} size={18}/> {mode === 'presentation' ? 'Präsentation' : 'Visuelle Tafel'}</span>
-                            <button onClick={reset} className="text-xs text-red-400 font-bold border border-red-900/30 px-3 py-1 rounded-lg hover:bg-red-900/20">BEENDEN</button>
+                            <button onClick={reset} className="text-xs text-red-400 font-bold border border-red-900/30 px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors">BEENDEN</button>
                         </div>
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-black/20 overflow-hidden relative">
-                            {loading && <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-center"><Icon d={PATHS.Refresh} className="animate-spin text-orange-500 mb-2" size={48}/><p className="animate-pulse">{imgStatus || "Denke nach..."}</p></div>}
+                            {loading && <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center text-center"><Icon d={PATHS.Refresh} className="animate-spin text-orange-500 mb-4" size={48}/><p className="animate-pulse text-lg font-bold">{presLoadingProgress || imgStatus || "Arbeite..."}</p></div>}
                             
                             {slides.length > 0 ? (
                                 <div className={`w-full aspect-video ${dObj.bg} ${dObj.text} rounded-xl shadow-2xl p-6 flex flex-col overflow-hidden border-4 border-white/5`}>
-                                    <h2 className="text-2xl font-bold border-b pb-4 mb-4">{slides[slideIdx].title}</h2>
+                                    <h2 className="text-2xl font-bold border-b pb-4 mb-4 truncate">{slides[slideIdx].title}</h2>
                                     <div className="flex flex-1 gap-4 overflow-hidden">
-                                        <div className="flex-1 overflow-y-auto"><ul className="space-y-2">{slides[slideIdx].content.map((c,i)=><li key={i} className="text-sm flex gap-2"><span className="text-blue-500">•</span>{c}</li>)}</ul></div>
-                                        {slides[slideIdx].imageUrl && <img src={slides[slideIdx].imageUrl} className="w-1/3 object-contain rounded-lg shadow-sm bg-black/5" />}
+                                        <div className="flex-1 overflow-y-auto"><ul className="space-y-3">{slides[slideIdx].content.map((c,i)=><li key={i} className="text-sm flex gap-2"><span className="text-blue-500 font-bold">•</span>{c}</li>)}</ul></div>
+                                        {slides[slideIdx].imageUrl && <div className="w-1/3 h-full"><img src={slides[slideIdx].imageUrl} className="w-full h-full object-contain rounded-lg shadow-sm bg-black/5" /></div>}
                                     </div>
                                     <div className="mt-4 flex justify-between items-center">
                                         <div className="flex gap-2">
                                             <button onClick={()=>setSlideIdx(s=>Math.max(0,s-1))} disabled={slideIdx===0} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronLeft}/></button>
                                             <button onClick={()=>setSlideIdx(s=>Math.min(slides.length-1,s+1))} disabled={slideIdx===slides.length-1} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronRight}/></button>
                                         </div>
-                                        <button onClick={downloadPPTX} className="text-xs flex items-center gap-1 bg-orange-600 text-white px-3 py-1 rounded shadow hover:bg-orange-500"><Icon d={PATHS.Download} size={12}/> PPTX</button>
+                                        <span className="text-xs opacity-50">Folie {slideIdx+1} / {slides.length}</span>
                                     </div>
                                 </div>
                             ) : (
-                                currentImg ? 
-                                <div className="relative w-full h-full flex items-center justify-center">
-                                    <img src={currentImg} className="max-h-full max-w-full rounded-xl shadow-2xl object-contain" />
-                                    {(mode === 'explain' || mode === 'vocabulary') && <button onClick={handleDownloadImage} className="absolute bottom-4 right-4 bg-blue-600 p-2 rounded-full shadow-lg"><Icon d={PATHS.Download} size={16} className="text-white"/></button>}
-                                </div>
-                                : <div className="text-slate-800 animate-pulse"><Icon d={PATHS.ImageIcon} size={128}/></div>
+                                currentImg ? <img src={currentImg} className="max-h-full max-w-full rounded-xl shadow-2xl object-contain border border-white/10" /> : <div className="text-slate-800 animate-pulse flex flex-col items-center"><Icon d={PATHS.ImageIcon} size={64}/><p className="mt-2 text-sm">Warte auf Inhalt...</p></div>
                             )}
                         </div>
                     </div>
 
+                    {/* RIGHT PANE */}
                     <div className="h-[60%] md:h-full md:w-1/2 flex flex-col bg-slate-950 relative">
                         <div className="p-4 border-b border-white/5 flex items-center gap-3 bg-slate-900/50 shrink-0">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -383,13 +415,13 @@
                         
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-28">
                             {slides.length > 0 ? (
-                                <div className="bg-amber-50 text-slate-800 p-6 rounded-lg shadow-xl font-serif border-l-4 border-yellow-400">
-                                    <h4 className="text-xs uppercase opacity-50 mb-2 font-sans tracking-widest font-bold">Folie {slideIdx+1} Skript:</h4>
-                                    <p className="text-lg leading-relaxed whitespace-pre-wrap">{slides[slideIdx].flashcard}</p>
+                                <div className="bg-amber-50 text-slate-800 p-6 rounded-lg shadow-xl font-serif border-l-4 border-yellow-400 rotate-1 transition-transform hover:rotate-0">
+                                    <h4 className="text-xs uppercase opacity-50 mb-4 font-sans tracking-widest font-bold border-b border-slate-300 pb-2">Notizen zu Folie {slideIdx+1}</h4>
+                                    <p className="text-lg leading-relaxed">{slides[slideIdx].flashcard}</p>
                                 </div>
                             ) : (
                                 messages.map((m, i) => (
-                                    <div key={i} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'}`}>
+                                    <div key={i} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'} animate-fade-in-up`}>
                                         <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${m.role === 'model' ? 'bg-slate-800 border border-white/5 rounded-tl-none' : 'bg-indigo-600 rounded-tr-none'}`}>
                                             <Typewriter text={m.parts[0].text} />
                                         </div>
