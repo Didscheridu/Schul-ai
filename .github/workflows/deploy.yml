@@ -1,62 +1,62 @@
-name: Deploy to GitHub Pages
+name: Deploy Web App
 
+# Wann soll das passieren? (Bei jedem Push auf "main")
 on:
-  # Löst den Workflow bei Pushes in den "main" Branch aus
   push:
     branches: ["main"]
-
-  # Erlaubt das manuelle Starten über den Actions-Tab
+  # Erlaubt dir, es auch manuell im "Actions" Tab zu starten
   workflow_dispatch:
 
-# Setzt die Berechtigungen für den GITHUB_TOKEN
+# Berechtigungen, damit GitHub die Seite online stellen darf
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Verhindert, dass mehrere Deploys gleichzeitig laufen
+# Verhindert, dass sich mehrere Updates überschneiden
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      # 1. Code auschecken
-      - name: Checkout
+      # 1. Code herunterladen
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Pages konfigurieren
+      # 2. GitHub Pages vorbereiten
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 3. API Key einfügen (Sicherheits-Schritt)
-      # Ersetzt den Platzhalter __GEMINI_API_KEY__ in der index.html
-      # mit dem echten Key aus den Repository Secrets.
+      # 3. API Key einfügen (Der wichtigste Schritt!)
+      # Er sucht nach "__GEMINI_API_KEY__" in der index.html und ersetzt es.
       - name: Inject API Key
         env:
-          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Hier holen wir den Key aus den Secrets
+          THE_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -z "$API_KEY" ]; then
-            echo "WARNUNG: GEMINI_API_KEY Secret nicht gefunden! Die App wird im Demo-Modus laufen."
+          if [ -z "$THE_KEY" ]; then
+            echo "WARNUNG: Das Secret GEMINI_API_KEY wurde nicht gefunden!"
+            echo "Bitte gehe zu Settings -> Secrets and variables -> Actions und erstelle es."
           else
-            sed -i "s|__GEMINI_API_KEY__|$API_KEY|g" index.html
-            echo "API Key erfolgreich in index.html injiziert."
+            # Wir benutzen Pipe | als Trennzeichen, falls der Key Schrägstriche enthält
+            sed -i "s|__GEMINI_API_KEY__|$THE_KEY|g" index.html
+            echo "Erfolg: Platzhalter wurde durch echten Key ersetzt."
           fi
 
-      # 4. Dateien hochladen (Artifakt erstellen)
-      - name: Upload artifact
+      # 4. Webseite hochladen
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Lädt das gesamte Verzeichnis hoch '.'
+          # '.' bedeutet: Nimm den aktuellen Ordner (wo die index.html liegt)
           path: '.'
 
-      # 5. Deployment durchführen
+      # 5. Veröffentlichen
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
