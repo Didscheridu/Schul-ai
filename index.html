@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>SchulSim AI 5.1 (Pro Design)</title>
+    <title>SchulSim AI 5.0 (Public)</title>
     
     <!-- Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,60 +14,28 @@
 
     <style>
         @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-up { animation: fade-in-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        
-        @keyframes aurora {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .bg-aurora {
-            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
-            background-size: 400% 400%;
-            animation: aurora 15s ease infinite;
-        }
-
+        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        .glass-input {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        .glass-input:focus {
-            background: rgba(0, 0, 0, 0.4);
-            border-color: rgba(99, 102, 241, 0.5);
-            outline: none;
-        }
-        
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .h-dvh { height: 100dvh; }
+        .bg-glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 m-0 p-0 overscroll-none">
     <div id="root" class="h-full"></div>
 
     <script type="text/babel">
-        // ==========================================
-        // KONFIGURATION
-        // ==========================================
-        // Platzhalter für GitHub Secrets. Wenn leer, wird LocalStorage genutzt.
-        const encodedKey = "__GEMINI_API_KEY__"; 
-
         const { useState, useEffect, useRef } = React;
 
-        // --- ICONS ---
+        // ==========================================
+        // KONFIGURATION (GitHub Secrets Placeholder)
+        // ==========================================
+        // GitHub ersetzt diesen Text automatisch durch deinen echten Key!
+        const apiKey = "__GEMINI_API_KEY__"; 
+
+        // --- STABILE ICONS ---
         const Icon = ({ d, size = 24, className = "", ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
                 <path d={d} />
@@ -90,23 +58,11 @@
             ChevronRight: "M9 18l6-6-6-6",
             Download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
             Upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12",
-            Mic: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3",
-            Sparkles: "m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z M5 3v4 M9 3v4 M3 7h4",
-            Pencil: "M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4",
-            Settings: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
-            Key: "M21 2l-2 2m-7.6 7.6l4.4 4.4L22 7l-3-3l-4.4 4.4M2 17l6-6M2 17v4h4"
+            Info: "M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5 M12 16v-4 M12 8h.01",
+            Globe: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20 M2 12h20"
         };
 
-        const DESIGNS = {
-            modern: { name: 'Modern (Blau)', bg: 'bg-white', text: 'text-slate-800', border: 'border-slate-200' },
-            business: { name: 'Business (Grau)', bg: 'bg-slate-100', text: 'text-slate-900', border: 'border-slate-300' },
-            chalkboard: { name: 'Tafel (Grün)', bg: 'bg-emerald-900', text: 'text-white', border: 'border-yellow-700/50' },
-            cyber: { name: 'Cyber (Neon)', bg: 'bg-slate-950', text: 'text-cyan-400', border: 'border-cyan-500/50' },
-            book: { name: 'Buch (Antik)', bg: 'bg-amber-50', text: 'text-stone-800', border: 'border-stone-300' },
-            nature: { name: 'Natur (Frisch)', bg: 'bg-green-50', text: 'text-green-900', border: 'border-green-200' },
-            minimal: { name: 'Minimal (S/W)', bg: 'bg-zinc-50', text: 'text-zinc-900', border: 'border-zinc-300' }
-        };
-
+        // --- TYPEWRITER ---
         const Typewriter = ({ text }) => {
             const [display, setDisplay] = useState('');
             useEffect(() => {
@@ -118,7 +74,7 @@
                 }, 5);
                 return () => clearInterval(timer);
             }, [text]);
-            return <span className="whitespace-pre-wrap">{display.split('**').map((s,i) => i%2===1 ? <strong key={i} className="text-indigo-400 font-bold">{s}</strong> : s)}</span>;
+            return <span className="whitespace-pre-wrap">{display.split('**').map((s,i) => i%2===1 ? <strong key={i} className="text-indigo-400">{s}</strong> : s)}</span>;
         };
 
         // --- API HELPERS ---
@@ -130,14 +86,14 @@
         };
 
         const verifyImageQuality = async (imgUrl, topic, key) => {
-            if (!key) return true;
+            if (!key || key.includes("__GEMINI")) return true;
             const base64 = await urlToBase64(imgUrl);
             if (!base64) return true;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [
-                        { text: `Prüfe das Bild für das Thema "${topic}". Ist es ein gutes, klares Lernmaterial (keine Memes, kein Spam)? Antworte NUR JA oder NEIN.` },
+                        { text: `Prüfe das Bild für den Schulunterricht Thema "${topic}". Ist es lehrreich und sicher? Antworte NUR JA oder NEIN.` },
                         { inlineData: { mimeType: "image/jpeg", data: base64 } }
                     ] }] })
                 });
@@ -147,7 +103,7 @@
         };
 
         const searchInternetImage = async (query, onStatus, key) => {
-            const cleanQuery = query.replace(/bild von|foto von|picture of|image of/gi, '').trim();
+            const cleanQuery = query.replace(/bild von|foto von/gi, '').trim();
             const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*`;
             try {
                 if (onStatus) onStatus("Suche geeignete Bilder...");
@@ -157,7 +113,7 @@
                     for (let i = 0; i < Math.min(pages.length, 3); i++) {
                         const candidate = pages[i].imageinfo[0].url;
                         if (!candidate.endsWith('.svg')) { // SVGs vermeiden
-                            if (onStatus) onStatus(`Prüfe Bild ${i+1} auf Qualität...`);
+                            if (onStatus) onStatus(`Prüfe Bild ${i+1}...`);
                             if (await verifyImageQuality(candidate, query, key)) return candidate;
                         }
                     }
@@ -168,7 +124,8 @@
         };
 
         const generateContent = async (history, prompt, imageData, mode, key, settings) => {
-            if (!key) return "FEHLER: Bitte API Key eintragen.";
+            if (!key || key.includes("__GEMINI")) return "FEHLER: API Key nicht geladen. Bitte prüfe deine GitHub Secrets.";
+            
             const parts = [{ text: prompt }];
             if (imageData) parts.push({ inlineData: { mimeType: "image/png", data: imageData } });
 
@@ -180,7 +137,7 @@
                 Layouts: image_right, image_left, title_only. 
                 WICHTIG: KEIN Markdown. Nur valides JSON.`;
             } else {
-                systemPrompt = `Du bist 'Herr Lehrer'. Modus: ${mode}. Erkläre fachlich korrekt, kindgerecht und strukturiert. Nutze Absätze und Fettgedrucktes.`;
+                systemPrompt = `Du bist 'Herr Lehrer'. Modus: ${mode}. Erkläre fachlich korrekt aber einfach. Nutze Absätze, Listen, **Fett**. KEINE LaTeX Formeln.`;
             }
 
             try {
@@ -201,13 +158,8 @@
             } catch (e) { return "Verbindungsfehler."; }
         };
 
-        // --- APP COMPONENT ---
+        // --- APP ---
         const App = () => {
-            const [localKey, setLocalKey] = useState(() => {
-                if (encodedKey && !encodedKey.includes("__GEMINI")) return encodedKey;
-                return localStorage.getItem('gemini_key') || "";
-            });
-            
             const [view, setView] = useState("intro");
             const [mode, setMode] = useState("explain");
             const [topic, setTopic] = useState("");
@@ -215,110 +167,107 @@
             const [input, setInput] = useState("");
             const [loading, setLoading] = useState(false);
             const [currentImg, setCurrentImg] = useState(null);
-            const [imgStatus, setImgStatus] = useState(null);
-            const [fileData, setFileData] = useState(null); // Base64 Data
-            
-            // Presentation
             const [slides, setSlides] = useState([]);
             const [slideIdx, setSlideIdx] = useState(0);
-            const [presSettings, setPresSettings] = useState({ count: 5, design: 'modern', source: 'web', audience: 'Klasse 5-10', detail: 'Mittel' });
-            const [presProgress, setPresProgress] = useState(null);
-
-            const [showKeyInput, setShowKeyInput] = useState(false);
+            const [imgStatus, setImgStatus] = useState(null);
+            const [fileData, setFileData] = useState(null);
             const chatEndRef = useRef(null);
+            
+            // Presentation Settings
+            const [presSettings, setPresSettings] = useState({ count: 5, design: 'modern', audience: 'Klasse 5-10', detail: 'Mittel' });
 
             useEffect(() => { if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
-            const handleSaveKey = (k) => { setLocalKey(k); localStorage.setItem('gemini_key', k); setShowKeyInput(false); };
-            
             const reset = () => { setView("intro"); setTopic(""); setMessages([]); setSlides([]); setCurrentImg(null); setFileData(null); };
 
             const handleStart = async (m, sub = null) => {
-                if (!localKey) { setShowKeyInput(true); return; }
                 setView("classroom"); setLoading(true); setMessages([]);
                 let modeName = sub || m;
                 let prompt = `Thema: ${topic}`;
-                let imgQuery = topic;
-
-                // Modus-Spezifische Logik
-                if (sub === 'question') { prompt = `Frage: ${topic}`; imgQuery = topic; }
-                else if (fileData) { prompt += " (Siehe Bild)"; imgQuery = null; setCurrentImg(fileData); }
+                
+                // FRAGE Modus
+                if (sub === 'question') {
+                    prompt = `Ich habe eine Frage: ${topic}`;
+                } else if (fileData) {
+                    prompt += " (Siehe Bild)";
+                    setCurrentImg(fileData);
+                }
 
                 try {
                     if (modeName === 'presentation') {
-                        prompt = `Erstelle Präsentation über ${topic}.`;
-                        const json = await generateContent([], prompt, null, 'presentation', localKey, { ...presSettings, topic });
+                        prompt = `Thema: ${topic}. Design: ${presSettings.design}. Folien: ${presSettings.count}.`;
+                        const json = await generateContent([], prompt, null, 'presentation', apiKey, { ...presSettings, topic });
                         const parsed = JSON.parse(json); setSlides(parsed);
                         for (let i = 0; i < parsed.length; i++) {
                             if (parsed[i].imagePrompt) {
-                                setPresProgress(`Suche Bild für Folie ${i+1}...`);
-                                parsed[i].imageUrl = await searchInternetImage(parsed[i].imagePrompt, null, localKey);
+                                setImgStatus(`Folie ${i+1}: Suche Bild...`);
+                                parsed[i].imageUrl = await searchInternetImage(parsed[i].imagePrompt, null, apiKey);
                             }
                         }
-                        setSlides([...parsed]); setPresProgress(null);
+                        setSlides([...parsed]); setImgStatus(null);
                     } else {
-                        if (imgQuery && !currentImg) {
-                             searchInternetImage(imgQuery, setImgStatus, localKey).then(img => { setCurrentImg(img); setImgStatus(null); });
+                        if (!currentImg && !fileData && sub !== 'question') {
+                             setImgStatus("Suche Bild...");
+                             searchInternetImage(topic, setImgStatus, apiKey).then(img => { setCurrentImg(img); setImgStatus(null); });
                         }
-                        const res = await generateContent([], prompt, fileData?.split(',')[1], modeName, localKey);
+                        const res = await generateContent([], prompt, fileData?.split(',')[1], modeName, apiKey);
                         setMessages([{ role: "model", parts: [{ text: res }] }]);
                     }
                 } catch(e) { setMessages([{ role: 'model', parts: [{ text: "Ein Fehler ist aufgetreten." }] }]); }
                 setLoading(false);
             };
 
-            const handleSend = async () => { if (!input.trim()) return; const newMsg = [...messages, {role:'user', parts:[{text:input}]}]; setMessages(newMsg); setInput(''); setLoading(true); const r = await generateContent(newMsg, input, null, mode, localKey); setMessages(p => [...p, {role:'model', parts:[{text:r}]}]); setLoading(false); };
-
-            const dObj = DESIGNS[presSettings.design] || DESIGNS.modern;
+            const handleSend = async () => { if (!input.trim()) return; const newMsg = [...messages, {role:'user', parts:[{text:input}]}]; setMessages(newMsg); setInput(''); setLoading(true); const r = await generateContent(newMsg, input, null, mode, apiKey); setMessages(p => [...p, {role:'model', parts:[{text:r}]}]); setLoading(false); };
+            
+            // Designs Config (Hardcoded for PPTX mapping)
+            const DESIGNS_CONFIG = {
+                modern: { name: 'Modern (Blau)', bg: 'bg-white', text: 'text-slate-800', border: 'border-slate-200' },
+                business: { name: 'Business (Grau)', bg: 'bg-slate-100', text: 'text-slate-900', border: 'border-slate-300' },
+                chalkboard: { name: 'Tafel (Grün)', bg: 'bg-emerald-900', text: 'text-white', border: 'border-yellow-700/50' },
+                cyber: { name: 'Cyber (Neon)', bg: 'bg-slate-950', text: 'text-cyan-400', border: 'border-cyan-500/50' },
+            };
+            const dObj = DESIGNS_CONFIG[presSettings.design] || DESIGNS_CONFIG.modern;
 
             if (view === "intro") {
                 return (
-                    <div className="h-dvh flex flex-col bg-slate-950 text-white font-sans overflow-y-auto bg-aurora">
-                         <div className="fixed inset-0 -z-10 bg-slate-900/80"></div>
+                    <div className="h-dvh flex flex-col items-center justify-center p-6 text-center overflow-y-auto bg-slate-950 text-white font-sans">
+                         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-indigo-900 to-slate-950"></div>
                          
-                         {/* Header */}
                          <div className="z-10 flex flex-col items-center pt-12 pb-8 px-4 animate-fade-in-up">
                             <div className="inline-block p-5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl shadow-2xl mb-4 hover:scale-105 transition-transform"><Icon d={PATHS.GraduationCap} size={56} /></div>
-                            <h1 className="text-4xl md:text-6xl font-black mb-2 tracking-tight">SchulSim AI 5.0</h1>
-                            <p className="text-indigo-300 font-bold tracking-widest text-xs uppercase mt-2">Professional Learning Suite</p>
-                            
-                            {/* API STATUS */}
-                            <button onClick={()=>setShowKeyInput(true)} className={`mt-6 px-4 py-2 rounded-full border text-xs font-bold flex items-center gap-2 transition-all ${localKey ? 'border-green-500/50 bg-green-500/10 text-green-400' : 'border-red-500/50 bg-red-500/10 text-red-400 animate-pulse'}`}>
-                                <div className={`w-2 h-2 rounded-full ${localKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                {localKey ? "System Bereit" : "Setup erforderlich (Klick hier)"}
-                            </button>
+                            <h1 className="text-4xl md:text-6xl font-black mb-2">SchulSim AI 5.0</h1>
+                            <p className="text-indigo-300 font-bold tracking-widest text-xs uppercase mt-2">Erstellt von Kayden</p>
                         </div>
 
-                        {/* Module Grid */}
                         <div className="z-10 w-full max-w-7xl px-4 pb-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mx-auto animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                             
                             {/* 1. VERSTEHEN */}
-                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                            <div className="bg-glass p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border border-white/10">
                                 <div className="flex items-center gap-3 mb-4 text-blue-400"><Icon d={PATHS.Brain} size={28} /> <h3 className="font-bold text-xl text-white">Verstehen</h3></div>
                                 <div className="mt-auto space-y-3">
                                     <div className="flex gap-2">
                                         <button onClick={()=>handleStart('explain')} className="flex-1 bg-white/10 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors">ERKLÄREN</button>
                                         <button onClick={()=>handleStart('explain', 'question')} className="flex-1 bg-white/10 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors">FRAGE</button>
                                     </div>
-                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm" placeholder="Thema oder Frage..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <input className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500" placeholder="Thema oder Frage..." value={topic} onChange={e=>setTopic(e.target.value)} />
                                 </div>
                             </div>
 
                             {/* 2. VOKABELN */}
-                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                            <div className="bg-glass p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border border-white/10">
                                 <div className="flex items-center gap-3 mb-4 text-pink-400"><Icon d={PATHS.Languages} size={28} /> <h3 className="font-bold text-xl text-white">Vokabeln</h3></div>
                                 <div className="mt-auto space-y-3">
                                     <label className="w-full border border-dashed border-white/20 rounded-xl py-2 flex items-center justify-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-white/5 transition-colors">
                                         <Icon d={fileData ? PATHS.Check : PATHS.Upload} size={14} /> {fileData ? "Bild bereit" : "Liste hochladen"}
                                         <input type="file" accept="image/*" className="hidden" onChange={e => { const r = new FileReader(); r.onload = ev => setFileData(ev.target.result); r.readAsDataURL(e.target.files[0]); }} />
                                     </label>
-                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-pink-500" placeholder="Sprache (z.B. Englisch)..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <input className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-pink-500 outline-none" placeholder="Sprache (z.B. Englisch)..." value={topic} onChange={e=>setTopic(e.target.value)} />
                                     <button onClick={()=>handleStart('vocabulary')} className="w-full bg-pink-600 hover:bg-pink-500 py-3 rounded-xl font-bold text-sm shadow-lg transition-transform active:scale-95">Training starten</button>
                                 </div>
                             </div>
 
                             {/* 3. AUFGABEN */}
-                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group">
+                            <div className="bg-glass p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border border-white/10">
                                 <div className="flex items-center gap-3 mb-4 text-emerald-400"><Icon d={PATHS.PenTool} size={28} /> <h3 className="font-bold text-xl text-white">Aufgaben</h3></div>
                                 <div className="mt-auto space-y-3">
                                     <label className="w-full border border-dashed border-white/20 rounded-xl py-2 flex items-center justify-center gap-2 text-xs text-slate-300 cursor-pointer hover:bg-white/5 transition-colors">
@@ -330,74 +279,61 @@
                                         <button onClick={()=>handleStart('correction')} className="flex-1 py-1.5 rounded text-[10px] font-bold hover:bg-white/10 text-slate-300 hover:text-white">KORR.</button>
                                         <button onClick={()=>handleStart('homework_solve')} className="flex-1 py-1.5 rounded text-[10px] font-bold hover:bg-white/10 text-slate-300 hover:text-white">LÖSEN</button>
                                     </div>
-                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-emerald-500" placeholder="Aufgabe..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <input className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 outline-none" placeholder="Aufgabe..." value={topic} onChange={e=>setTopic(e.target.value)} />
                                 </div>
                             </div>
 
                             {/* 4. PRÄSENTATION */}
-                            <div className="glass-panel p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border-orange-500/30">
+                            <div className="bg-glass p-6 rounded-3xl flex flex-col hover:bg-white/5 transition-all shadow-xl group border border-orange-500/30">
                                 <div className="flex items-center gap-3 mb-4 text-orange-400"><Icon d={PATHS.Presentation} size={28} /> <h3 className="font-bold text-xl text-white">Referat</h3></div>
                                 <div className="mt-auto space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
-                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, audience:e.target.value})}>
+                                        <select className="bg-black/40 rounded-lg px-2 py-2 text-xs text-white border-none cursor-pointer outline-none" onChange={e=>setPresSettings({...presSettings, audience:e.target.value})}>
                                             <option>Klasse 5-7</option><option>Klasse 8-10</option><option>Oberstufe</option>
                                         </select>
-                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, detail:e.target.value})}>
+                                        <select className="bg-black/40 rounded-lg px-2 py-2 text-xs text-white border-none cursor-pointer outline-none" onChange={e=>setPresSettings({...presSettings, detail:e.target.value})}>
                                             <option>Kurz</option><option>Mittel</option><option>Ausführlich</option>
                                         </select>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, design:e.target.value})}>
-                                            {Object.keys(DESIGNS).map(k=><option key={k} value={k}>{DESIGNS[k].name}</option>)}
+                                        <select className="bg-black/40 rounded-lg px-2 py-2 text-xs text-white border-none cursor-pointer outline-none" onChange={e=>setPresSettings({...presSettings, design:e.target.value})}>
+                                            {Object.keys(DESIGNS_CONFIG).map(k=><option key={k} value={k}>{DESIGNS_CONFIG[k].name}</option>)}
                                         </select>
-                                        <select className="glass-input rounded-lg px-2 py-2 text-xs cursor-pointer" onChange={e=>setPresSettings({...presSettings, count:e.target.value})}>
+                                        <select className="bg-black/40 rounded-lg px-2 py-2 text-xs text-white border-none cursor-pointer outline-none" onChange={e=>setPresSettings({...presSettings, count:e.target.value})}>
                                             {[3,5,7,10,12].map(n=><option key={n} value={n}>{n} Folien</option>)}
                                         </select>
                                     </div>
-                                    <input className="glass-input w-full rounded-xl px-4 py-3 text-sm focus:border-orange-500" placeholder="Thema..." value={topic} onChange={e=>setTopic(e.target.value)} />
+                                    <input className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-orange-500 outline-none" placeholder="Thema..." value={topic} onChange={e=>setTopic(e.target.value)} />
                                     <button onClick={()=>handleStart('presentation')} disabled={!topic} className="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"><Icon d={PATHS.Play} size={14}/> Erstellen</button>
                                 </div>
                             </div>
                         </div>
-
-                        {/* KEY INPUT MODAL */}
-                        {showKeyInput && (
-                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-                                <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl">
-                                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon d={PATHS.Key} className="text-yellow-400"/> API Key Setup</h2>
-                                    <input type="password" placeholder="AIzaSy..." className="w-full bg-black/50 border border-slate-600 rounded-lg px-4 py-3 text-white mb-6 outline-none focus:border-indigo-500" onKeyDown={(e) => { if(e.key === 'Enter') handleSaveKey(e.target.value) }} />
-                                    <div className="flex gap-2"><button onClick={(e) => handleSaveKey(e.target.previousSibling.value)} className="flex-1 bg-indigo-600 py-2 rounded-lg font-bold">Speichern</button><button onClick={() => setShowKeyInput(false)} className="flex-1 border border-white/10 py-2 rounded-lg">Abbrechen</button></div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 );
             }
 
             return (
                 <div className="h-dvh flex flex-col md:flex-row bg-slate-950 overflow-hidden">
-                    {/* LEFT PANE */}
+                    {/* LEFT: VISUALS */}
                     <div className="h-[40%] md:h-full md:w-1/2 border-r border-white/5 flex flex-col bg-[#0F1115]">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#0F1115]">
                             <span className="font-bold text-indigo-400 flex items-center gap-2"><Icon d={PATHS.ImageIcon} size={18}/> {mode === 'presentation' ? 'Präsentation' : 'Visuelle Tafel'}</span>
-                            <button onClick={reset} className="text-xs text-red-400 font-bold border border-red-900/30 px-3 py-1 rounded-lg hover:bg-red-900/20 transition-colors">BEENDEN</button>
+                            <button onClick={reset} className="text-xs text-red-400 font-bold border border-red-900/30 px-3 py-1 rounded-lg hover:bg-red-900/20">BEENDEN</button>
                         </div>
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-black/20 overflow-hidden relative">
-                            {loading && <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center text-center"><Icon d={PATHS.Refresh} className="animate-spin text-orange-500 mb-4" size={48}/><p className="animate-pulse text-lg font-bold">{presLoadingProgress || imgStatus || "Arbeite..."}</p></div>}
+                            {loading && <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center text-center"><Icon d={PATHS.Refresh} className="animate-spin text-orange-500 mb-4" size={48}/><p className="animate-pulse text-lg font-bold">{presLoadingProgress || imgStatus || "Denke nach..."}</p></div>}
                             
                             {slides.length > 0 ? (
                                 <div className={`w-full aspect-video ${dObj.bg} ${dObj.text} rounded-xl shadow-2xl p-6 flex flex-col overflow-hidden border-4 border-white/5`}>
-                                    <h2 className="text-2xl font-bold border-b pb-4 mb-4 truncate">{slides[slideIdx].title}</h2>
+                                    <h2 className="text-2xl font-bold border-b pb-4 mb-4">{slides[slideIdx].title}</h2>
                                     <div className="flex flex-1 gap-4 overflow-hidden">
-                                        <div className="flex-1 overflow-y-auto"><ul className="space-y-3">{slides[slideIdx].content.map((c,i)=><li key={i} className="text-sm flex gap-2"><span className="text-blue-500 font-bold">•</span>{c}</li>)}</ul></div>
+                                        <div className="flex-1 overflow-y-auto"><ul className="space-y-2">{slides[slideIdx].content.map((c,i)=><li key={i} className="text-sm flex gap-2"><span className="text-blue-500">•</span>{c}</li>)}</ul></div>
                                         {slides[slideIdx].imageUrl && <div className="w-1/3 h-full"><img src={slides[slideIdx].imageUrl} className="w-full h-full object-contain rounded-lg shadow-sm bg-black/5" /></div>}
                                     </div>
                                     <div className="mt-4 flex justify-between items-center">
-                                        <div className="flex gap-2">
-                                            <button onClick={()=>setSlideIdx(s=>Math.max(0,s-1))} disabled={slideIdx===0} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronLeft}/></button>
-                                            <button onClick={()=>setSlideIdx(s=>Math.min(slides.length-1,s+1))} disabled={slideIdx===slides.length-1} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronRight}/></button>
-                                        </div>
-                                        <span className="text-xs opacity-50">Folie {slideIdx+1} / {slides.length}</span>
+                                        <button onClick={()=>setSlideIdx(s=>Math.max(0,s-1))} disabled={slideIdx===0} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronLeft}/></button>
+                                        <span className="text-xs">{slideIdx+1} / {slides.length}</span>
+                                        <button onClick={()=>setSlideIdx(s=>Math.min(slides.length-1,s+1))} disabled={slideIdx===slides.length-1} className="p-2 bg-black/10 rounded-full disabled:opacity-30"><Icon d={PATHS.ChevronRight}/></button>
                                     </div>
                                 </div>
                             ) : (
@@ -406,7 +342,7 @@
                         </div>
                     </div>
 
-                    {/* RIGHT PANE */}
+                    {/* RIGHT: INTERACTION */}
                     <div className="h-[60%] md:h-full md:w-1/2 flex flex-col bg-slate-950 relative">
                         <div className="p-4 border-b border-white/5 flex items-center gap-3 bg-slate-900/50 shrink-0">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -415,18 +351,21 @@
                         
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-28">
                             {slides.length > 0 ? (
-                                <div className="bg-amber-50 text-slate-800 p-6 rounded-lg shadow-xl font-serif border-l-4 border-yellow-400 rotate-1 transition-transform hover:rotate-0">
-                                    <h4 className="text-xs uppercase opacity-50 mb-4 font-sans tracking-widest font-bold border-b border-slate-300 pb-2">Notizen zu Folie {slideIdx+1}</h4>
+                                <div className="bg-amber-50 text-slate-800 p-6 rounded-lg shadow-xl font-serif border-l-4 border-yellow-400">
+                                    <h4 className="text-xs uppercase opacity-50 mb-2 font-sans tracking-widest font-bold">Folie {slideIdx+1} Notizen:</h4>
                                     <p className="text-lg leading-relaxed">{slides[slideIdx].flashcard}</p>
                                 </div>
                             ) : (
-                                messages.map((m, i) => (
-                                    <div key={i} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'} animate-fade-in-up`}>
-                                        <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${m.role === 'model' ? 'bg-slate-800 border border-white/5 rounded-tl-none' : 'bg-indigo-600 rounded-tr-none'}`}>
-                                            <Typewriter text={m.parts[0].text} />
+                                <>
+                                    {messages.map((m, i) => (
+                                        <div key={i} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'}`}>
+                                            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${m.role === 'model' ? 'bg-slate-800 border border-white/5 rounded-tl-none' : 'bg-indigo-600 rounded-tr-none'}`}>
+                                                <Typewriter text={m.parts[0].text} />
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))}
+                                    {loading && !slides.length && <div className="flex justify-start"><div className="bg-slate-800 p-4 rounded-2xl animate-pulse">KI schreibt...</div></div>}
+                                </>
                             )}
                             <div ref={chatEndRef}></div>
                         </div>
@@ -435,7 +374,7 @@
                             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-950 via-slate-950 to-transparent">
                                 <div className="flex items-center bg-slate-900 border border-white/10 rounded-full px-4 py-1 shadow-2xl focus-within:border-indigo-500 transition-all">
                                     <input className="flex-1 bg-transparent py-3 outline-none text-sm" placeholder="Frage stellen..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend()} />
-                                    <button onClick={handleSend} className="bg-indigo-600 p-2 rounded-full ml-2 hover:scale-105 active:scale-95 transition-transform"><Icon d={PATHS.Send} size={18} /></button>
+                                    <button onClick={handleSend} className="bg-indigo-600 p-2 rounded-full ml-2"><Icon d={PATHS.Send} size={18} /></button>
                                 </div>
                             </div>
                         )}
